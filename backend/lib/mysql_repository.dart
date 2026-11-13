@@ -65,7 +65,7 @@ class MysqlRepository {
           product['id'],
         ],
       );
-      return result.affectedRows ?? 0;
+      return result.affectedRows;
     } finally {
       await conn.close();
     }
@@ -77,7 +77,7 @@ class MysqlRepository {
       final result = await conn.query('DELETE FROM products WHERE id = ?', [
         id,
       ]);
-      return result.affectedRows ?? 0;
+      return result.affectedRows;
     } finally {
       await conn.close();
     }
