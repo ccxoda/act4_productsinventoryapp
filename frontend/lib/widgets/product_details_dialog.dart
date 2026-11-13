@@ -2,11 +2,46 @@ import 'package:flutter/material.dart';
 
 import '../models/product.dart';
 
-enum ProductAction { edit, delete }
+class ProductDetailsDialog extends StatefulWidget {
+  const ProductDetailsDialog({
+    super.key,
+    required this.product,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
-class ProductDetailsDialog extends StatelessWidget {
-  const ProductDetailsDialog({super.key, required this.product});
   final Product product;
+
+  final Future<Product?> Function(Product product) onEdit;
+
+  final Future<bool> Function(Product product) onDelete;
+
+  @override
+  State<ProductDetailsDialog> createState() => _ProductDetailsDialogState();
+}
+
+class _ProductDetailsDialogState extends State<ProductDetailsDialog> {
+  late Product _product;
+
+  @override
+  void initState() {
+    super.initState();
+    _product = widget.product;
+  }
+
+  Future<void> _edit() async {
+    final updated = await widget.onEdit(_product);
+    if (updated != null && mounted) {
+      setState(() => _product = updated); // dialog stays open, shows new info
+    }
+  }
+
+  Future<void> _delete() async {
+    final deleted = await widget.onDelete(_product);
+    if (deleted && mounted) {
+      Navigator.of(context).pop(); // product is gone, so close the details
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +49,7 @@ class ProductDetailsDialog extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return AlertDialog(
-      title: Text(product.name),
+      title: Text(_product.name),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -23,27 +58,27 @@ class ProductDetailsDialog extends StatelessWidget {
             _DetailRow(
               icon: Icons.sell_outlined,
               label: 'Price',
-              value: '₱${product.price.toStringAsFixed(2)}',
+              value: '₱${_product.price.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 8),
             _DetailRow(
               icon: Icons.inventory_2_outlined,
               label: 'Quantity',
-              value: '${product.quantity}',
+              value: '${_product.quantity}',
             ),
             const SizedBox(height: 16),
             Text(
-              'Description:',
+              'Description',
               style: theme.textTheme.labelLarge?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              product.description.isEmpty
+              _product.description.isEmpty
                   ? 'No description'
-                  : product.description,
-              style: product.description.isEmpty
+                  : _product.description,
+              style: _product.description.isEmpty
                   ? theme.textTheme.bodyMedium?.copyWith(
                       fontStyle: FontStyle.italic,
                       color: scheme.onSurfaceVariant,
@@ -56,12 +91,12 @@ class ProductDetailsDialog extends StatelessWidget {
       actions: [
         TextButton.icon(
           style: TextButton.styleFrom(foregroundColor: scheme.error),
-          onPressed: () => Navigator.of(context).pop(ProductAction.delete),
+          onPressed: _delete,
           icon: const Icon(Icons.delete_outline),
           label: const Text('Delete'),
         ),
         FilledButton.tonalIcon(
-          onPressed: () => Navigator.of(context).pop(ProductAction.edit),
+          onPressed: _edit,
           icon: const Icon(Icons.edit_outlined),
           label: const Text('Edit'),
         ),

@@ -69,24 +69,6 @@ class _InventoryAppState extends State<InventoryApp> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  // ---- View details ----
-  Future<void> _showDetails(Product product) async {
-    final action = await showDialog<ProductAction>(
-      context: context,
-      builder: (_) => ProductDetailsDialog(product: product),
-    );
-    if (!mounted) return;
-
-    switch (action) {
-      case ProductAction.edit:
-        await _editProduct(product);
-      case ProductAction.delete:
-        await _deleteProduct(product); // still asks for confirmation
-      case null:
-        break; // closed without choosing anything
-    }
-  }
-
   // ---- Add ----
   Future<void> _addProduct() async {
     final result = await showDialog<Product>(
@@ -112,12 +94,13 @@ class _InventoryAppState extends State<InventoryApp> {
   }
 
   // ---- Edit ----
-  Future<void> _editProduct(Product product) async {
+  // Returns the updated product, or null if cancelled / failed.
+  Future<Product?> _editProduct(Product product) async {
     final result = await showDialog<Product>(
       context: context,
       builder: (_) => ProductDialog(product: product),
     );
-    if (result == null) return;
+    if (result == null) return null;
 
     try {
       await _api.updateProduct(
@@ -128,16 +111,19 @@ class _InventoryAppState extends State<InventoryApp> {
         result.quantity,
       );
       await _loadProducts();
-      if (!mounted) return;
+      if (!mounted) return null;
       _showMessage('"${result.name}" updated');
+      return result;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return null;
       _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      return null;
     }
   }
 
   // ---- Delete (with confirmation) ----
-  Future<void> _deleteProduct(Product product) async {
+  // Returns true only if the product was actually deleted.
+  Future<bool> _deleteProduct(Product product) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -162,17 +148,31 @@ class _InventoryAppState extends State<InventoryApp> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) return false;
 
     try {
       await _api.deleteProduct(product.id);
       await _loadProducts();
-      if (!mounted) return;
+      if (!mounted) return true;
       _showMessage('"${product.name}" deleted');
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      return false;
     }
+  }
+
+  // ---- View details ----
+  Future<void> _showDetails(Product product) {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => ProductDetailsDialog(
+        product: product,
+        onEdit: _editProduct,
+        onDelete: _deleteProduct,
+      ),
+    );
   }
 
   @override
@@ -231,24 +231,24 @@ class _InventoryAppState extends State<InventoryApp> {
                     subtitle: Text(
                       '₱${item.price.toStringAsFixed(2)}  •  Qty: ${item.quantity}',
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: 'Edit',
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: () => _editProduct(item),
-                        ),
-                        IconButton(
-                          tooltip: 'Delete',
-                          icon: Icon(
-                            Icons.delete_outline,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          onPressed: () => _deleteProduct(item),
-                        ),
-                      ],
-                    ),
+                    // trailing: Row(
+                    //   mainAxisSize: MainAxisSize.min,
+                    //   children: [
+                    //     IconButton(
+                    //       tooltip: 'Edit',
+                    //       icon: const Icon(Icons.edit_outlined),
+                    //       onPressed: () => _editProduct(item),
+                    //     ),
+                    //     IconButton(
+                    //       tooltip: 'Delete',
+                    //       icon: Icon(
+                    //         Icons.delete_outline,
+                    //         color: Theme.of(context).colorScheme.error,
+                    //       ),
+                    //       onPressed: () => _deleteProduct(item),
+                    //     ),
+                    //   ],
+                    // ),
                   ),
                 );
               },
