@@ -46,3 +46,12 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Secrets
+**/.env
+
+# Dart & Flutter build artifacts
+**/.dart_tool/
+**/build/
+**/.packages
+**/pubspec.lock
