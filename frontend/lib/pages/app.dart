@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api_service.dart';
 import '../models/product.dart';
 import '../widgets/product_dialog.dart';
+import '../widgets/product_details_dialog.dart';
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key, required this.title});
@@ -66,6 +67,24 @@ class _InventoryAppState extends State<InventoryApp> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // ---- View details ----
+  Future<void> _showDetails(Product product) async {
+    final action = await showDialog<ProductAction>(
+      context: context,
+      builder: (_) => ProductDetailsDialog(product: product),
+    );
+    if (!mounted) return;
+
+    switch (action) {
+      case ProductAction.edit:
+        await _editProduct(product);
+      case ProductAction.delete:
+        await _deleteProduct(product); // still asks for confirmation
+      case null:
+        break; // closed without choosing anything
+    }
   }
 
   // ---- Add ----
@@ -204,6 +223,7 @@ class _InventoryAppState extends State<InventoryApp> {
                 return Card(
                   margin: EdgeInsets.zero,
                   child: ListTile(
+                    onTap: () => _showDetails(item),
                     leading: const CircleAvatar(
                       child: Icon(Icons.inventory_2_outlined),
                     ),
