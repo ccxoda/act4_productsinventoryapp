@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'login_page.dart';
 import '../api_service.dart';
 import '../models/product.dart';
 import '../widgets/product_dialog.dart';
@@ -181,6 +182,42 @@ class _InventoryAppState extends State<InventoryApp> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirm Log Out?'),
+                  content: const Text('You will be returned to login page.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Log out',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: _buildBody(),
       floatingActionButton: _loaded
