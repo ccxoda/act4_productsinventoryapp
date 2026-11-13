@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:act4_productsinventoryapp/models/product.dart';
+
+import '../models/product.dart';
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key, required this.title});
