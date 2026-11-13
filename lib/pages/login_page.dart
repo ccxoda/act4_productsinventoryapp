@@ -52,9 +52,8 @@ class LoginPage extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ProductInventoryApp(
-                        title: 'Product Inventory App',
-                      ),
+                      builder: (context) =>
+                          const MainApp(title: 'Product Inventory App'),
                     ),
                   );
                 },
