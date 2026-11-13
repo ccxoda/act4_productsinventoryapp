@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api_service.dart';
 import '../models/product.dart';
+import '../widgets/product_dialog.dart';
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key, required this.title});
@@ -32,13 +33,13 @@ class _InventoryAppState extends State<InventoryApp> {
   final ApiService _api = ApiService();
   final List<Product> _products = [];
 
-  bool _loaded = false; // true once the first load attempt has finished
+  bool _loaded = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts(); // runs automatically when the app opens
+    _loadProducts();
   }
 
   Future<void> _loadProducts() async {
@@ -61,6 +62,100 @@ class _InventoryAppState extends State<InventoryApp> {
     }
   }
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // ---- Add ----
+  Future<void> _addProduct() async {
+    final result = await showDialog<Product>(
+      context: context,
+      builder: (_) => const ProductDialog(),
+    );
+    if (result == null) return;
+
+    try {
+      await _api.addProduct(
+        result.name,
+        result.price,
+        result.description,
+        result.quantity,
+      );
+      await _loadProducts();
+      if (!mounted) return;
+      _showMessage('"${result.name}" added');
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  // ---- Edit ----
+  Future<void> _editProduct(Product product) async {
+    final result = await showDialog<Product>(
+      context: context,
+      builder: (_) => ProductDialog(product: product),
+    );
+    if (result == null) return;
+
+    try {
+      await _api.updateProduct(
+        product.id,
+        result.name,
+        result.price,
+        result.description,
+        result.quantity,
+      );
+      await _loadProducts();
+      if (!mounted) return;
+      _showMessage('"${result.name}" updated');
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  // ---- Delete (with confirmation) ----
+  Future<void> _deleteProduct(Product product) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete product?'),
+        content: Text(
+          'Are you sure you want to delete "${product.name}"? '
+          'This can\'t be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await _api.deleteProduct(product.id);
+      await _loadProducts();
+      if (!mounted) return;
+      _showMessage('"${product.name}" deleted');
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,6 +164,13 @@ class _InventoryAppState extends State<InventoryApp> {
         title: Text(widget.title),
       ),
       body: _buildBody(),
+      floatingActionButton: _loaded
+          ? FloatingActionButton.extended(
+              onPressed: _addProduct,
+              icon: const Icon(Icons.add),
+              label: const Text('Add product'),
+            )
+          : null,
     );
   }
 
@@ -80,7 +182,7 @@ class _InventoryAppState extends State<InventoryApp> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadProducts, // pull down to refresh
+      onRefresh: _loadProducts,
       child: _products.isEmpty
           ? ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -93,7 +195,8 @@ class _InventoryAppState extends State<InventoryApp> {
             )
           : ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              // extra bottom padding so the button doesn't cover the last item
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
               itemCount: _products.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
@@ -105,8 +208,27 @@ class _InventoryAppState extends State<InventoryApp> {
                       child: Icon(Icons.inventory_2_outlined),
                     ),
                     title: Text(item.name),
-                    subtitle: Text('Quantity: ${item.quantity}'),
-                    trailing: Text('₱${item.price}'),
+                    subtitle: Text(
+                      '₱${item.price.toStringAsFixed(2)}  •  Qty: ${item.quantity}',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit',
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => _editProduct(item),
+                        ),
+                        IconButton(
+                          tooltip: 'Delete',
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          onPressed: () => _deleteProduct(item),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

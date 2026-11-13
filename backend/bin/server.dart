@@ -5,6 +5,7 @@ import 'package:dotenv/dotenv.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 
 import '../lib/mysql_repository.dart';
 
@@ -92,6 +93,11 @@ void main() async {
     }
   });
 
-  final server = await io.serve(router.call, InternetAddress.anyIPv4, port);
+  final handler = Pipeline()
+      .addMiddleware(logRequests())
+      .addMiddleware(corsHeaders())
+      .addHandler(router.call);
+
+  final server = await io.serve(handler, InternetAddress.anyIPv4, port);
   print('Server listening on http://localhost:${server.port}');
 }
