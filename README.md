@@ -1,4 +1,4 @@
-# act4_studentcrudapp
+# act4_productsinventoryapp
 
 A new Flutter project.
 

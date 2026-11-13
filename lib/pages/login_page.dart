@@ -44,21 +44,22 @@ class LoginPage extends StatelessWidget {
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              // ElevatedButton(
-              //   style: ElevatedButton.styleFrom(
-              //     minimumSize: const Size(double.infinity, 48),
-              //   ),
-              //   onPressed: () {
-              //     Navigator.pushReplacement(
-              //       context,
-              //       // MaterialPageRoute(
-              //       //   builder: (context) =>
-              //       //       const MyHomePage(title: 'Student Profile'),
-              //       // ),
-              //     );
-              //   },
-              //   child: const Text('Login'),
-              // ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProductInventoryApp(
+                        title: 'Product Inventory App',
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Login'),
+              ),
             ],
           ),
         ),
